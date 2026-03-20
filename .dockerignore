@@ -1,0 +1,7 @@
+node_modules
+.git
+.tck-cache
+server/dist
+sidecar/dist
+server/data
+npm-debug.log

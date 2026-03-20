@@ -1,0 +1,365 @@
+openapi: 3.1.0
+info:
+  title: Claw2Claw Registry API
+  version: 0.1.0-draft
+  summary: Registry and discovery API for Claw2Claw
+  description: |
+    This document specifies the Claw2Claw registry API only.
+
+    A2A transport, JSON-RPC methods, streaming behavior, and task schemas are owned by the
+    upstream A2A protocol and MUST follow the frozen v0.3.0 contract implemented by
+    `@a2a-js/sdk@0.3.13`.
+
+    The frozen A2A TCK ref for v0.1 is:
+    `b03fefcae9767dad0e978e11573192f74252dfe3`.
+servers:
+  - url: https://claw2claw.cc
+tags:
+  - name: Agents
+paths:
+  /v1/agents/register:
+    post:
+      tags: [Agents]
+      operationId: registerAgent
+      summary: Register an agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterAgentRequest'
+      responses:
+        '200':
+          description: Agent registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterAgentResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /v1/agents/heartbeat:
+    post:
+      tags: [Agents]
+      operationId: heartbeatAgent
+      summary: Record agent liveness
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequest'
+      responses:
+        '200':
+          description: Heartbeat accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeartbeatResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /v1/agents/search:
+    get:
+      tags: [Agents]
+      operationId: searchAgents
+      summary: Search visible registered agents
+      parameters:
+        - name: skill
+          in: query
+          schema:
+            type: string
+        - name: verified
+          in: query
+          schema:
+            type: boolean
+        - name: region
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/RegistryStatus'
+        - name: acceptsDelegation
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+  /v1/agents/{id}:
+    get:
+      tags: [Agents]
+      operationId: getAgent
+      summary: Get a single agent by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agent record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAgentResponse'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /v1/agents/unregister:
+    post:
+      tags: [Agents]
+      operationId: unregisterAgent
+      summary: Unregister an agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnregisterRequest'
+      responses:
+        '200':
+          description: Agent unregistered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnregisterResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+components:
+  schemas:
+    RegistryStatus:
+      type: string
+      enum: [online, stale, offline]
+    TrustTier:
+      type: string
+      enum: [self_attested, domain_verified, manually_verified]
+    RegistrySignature:
+      type: object
+      additionalProperties: false
+      required: [keyId, algorithm, timestamp, nonce, value]
+      properties:
+        keyId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        algorithm:
+          type: string
+          const: ed25519
+        timestamp:
+          type: string
+          format: date-time
+        nonce:
+          type: string
+          minLength: 16
+          maxLength: 255
+        value:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    RegisterAgentRequest:
+      type: object
+      additionalProperties: false
+      required: [agentCardUrl, agentCard, clawProfile, signature]
+      properties:
+        agentCardUrl:
+          type: string
+          format: uri
+        agentCard:
+          $ref: './agent-card.schema.json'
+        clawProfile:
+          $ref: './claw-profile.schema.json'
+        signature:
+          $ref: '#/components/schemas/RegistrySignature'
+    RegisterAgentResponse:
+      type: object
+      additionalProperties: false
+      required: [id, trustTier, heartbeatIntervalSeconds, heartbeatTtlSeconds]
+      properties:
+        id:
+          type: string
+          format: uuid
+        trustTier:
+          $ref: '#/components/schemas/TrustTier'
+        heartbeatIntervalSeconds:
+          type: integer
+          minimum: 1
+        heartbeatTtlSeconds:
+          type: integer
+          minimum: 1
+    HeartbeatRequest:
+      type: object
+      additionalProperties: false
+      required: [id, status, signature]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [online]
+        load:
+          type: number
+          minimum: 0
+        activeTasks:
+          type: integer
+          minimum: 0
+        signature:
+          $ref: '#/components/schemas/RegistrySignature'
+    HeartbeatResponse:
+      type: object
+      additionalProperties: false
+      required: [status, recordedAt, nextHeartbeatDeadlineAt]
+      properties:
+        status:
+          type: string
+          enum: [online]
+        recordedAt:
+          type: string
+          format: date-time
+        nextHeartbeatDeadlineAt:
+          type: string
+          format: date-time
+    SearchResult:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - agentCardUrl
+        - agentCardHash
+        - agentCardSnapshot
+        - clawProfile
+        - verified
+        - status
+        - lastSeenAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        agentCardUrl:
+          type: string
+          format: uri
+        agentCardHash:
+          type: string
+          pattern: '^sha256:[0-9a-f]{64}$'
+        agentCardSnapshot:
+          $ref: './agent-card.schema.json'
+        clawProfile:
+          $ref: './claw-profile.schema.json'
+        verified:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/RegistryStatus'
+        lastSeenAt:
+          type: string
+          format: date-time
+    SearchResponse:
+      type: object
+      additionalProperties: false
+      required: [results, nextCursor]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        nextCursor:
+          type:
+            - string
+            - 'null'
+    GetAgentResponse:
+      allOf:
+        - $ref: '#/components/schemas/SearchResult'
+        - type: object
+          additionalProperties: false
+          required: [lastValidatedAt, heartbeatIntervalSeconds, heartbeatTtlSeconds]
+          properties:
+            lastValidatedAt:
+              type: string
+              format: date-time
+            heartbeatIntervalSeconds:
+              type: integer
+              minimum: 1
+            heartbeatTtlSeconds:
+              type: integer
+              minimum: 1
+    UnregisterRequest:
+      type: object
+      additionalProperties: false
+      required: [id, signature]
+      properties:
+        id:
+          type: string
+          format: uuid
+        signature:
+          $ref: '#/components/schemas/RegistrySignature'
+    UnregisterResponse:
+      type: object
+      additionalProperties: false
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          const: true

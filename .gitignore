@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.local
+.venv/
+__pycache__/
+.pytest_cache/
+.tck-cache/
+*.log
+server/data/
+sidecar/data/

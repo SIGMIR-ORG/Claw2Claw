@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claw2claw.cc/spec/agent-card.schema.json",
+  "title": "Claw2Claw Registered Agent Card",
+  "description": "Local validation subset for A2A 0.3.0 Agent Cards registered with Claw2Claw. Full runtime validation MUST also validate against the official A2A 0.3.0 AgentCard contract.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "protocolVersion",
+    "name",
+    "description",
+    "url",
+    "preferredTransport",
+    "version",
+    "capabilities",
+    "securitySchemes",
+    "security",
+    "defaultInputModes",
+    "defaultOutputModes",
+    "skills",
+    "claw2clawRegistry"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "0.3.0"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "preferredTransport": {
+      "type": "string",
+      "const": "JSONRPC"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["streaming", "pushNotifications"],
+      "properties": {
+        "streaming": {
+          "type": "boolean"
+        },
+        "pushNotifications": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "securitySchemes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bearerAuth"],
+      "properties": {
+        "bearerAuth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "scheme", "bearerFormat"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "http"
+            },
+            "scheme": {
+              "type": "string",
+              "const": "bearer"
+            },
+            "bearerFormat": {
+              "type": "string",
+              "const": "opaque"
+            }
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bearerAuth"],
+        "properties": {
+          "bearerAuth": {
+            "type": "array",
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    "defaultInputModes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "defaultOutputModes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "skills": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/AgentSkill"
+      }
+    },
+    "supportsAuthenticatedExtendedCard": {
+      "type": "boolean",
+      "const": false
+    },
+    "additionalInterfaces": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "claw2clawRegistry": {
+      "$ref": "#/$defs/Claw2ClawRegistryExtension"
+    }
+  },
+  "$defs": {
+    "AgentSkill": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "name", "description", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inputModes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputModes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "security": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "PublicSigningKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "algorithm", "publicKey"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "algorithm": {
+          "type": "string",
+          "const": "ed25519"
+        },
+        "publicKey": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 43,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      }
+    },
+    "Claw2ClawRegistryExtension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keys"],
+      "properties": {
+        "keys": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/PublicSigningKey"
+          }
+        }
+      }
+    }
+  }
+}

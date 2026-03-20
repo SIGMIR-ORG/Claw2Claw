@@ -1,0 +1,46 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      SERVER_DB_PATH: /data/registry.db
+      SERVER_HEARTBEAT_INTERVAL_SECONDS: ${SERVER_HEARTBEAT_INTERVAL_SECONDS:-45}
+      SERVER_HEARTBEAT_TTL_SECONDS: ${SERVER_HEARTBEAT_TTL_SECONDS:-135}
+      SERVER_ALLOW_SELF_ATTESTED: ${SERVER_ALLOW_SELF_ATTESTED:-true}
+      SERVER_REQUIRE_HTTPS_FOR_PUBLIC: ${SERVER_REQUIRE_HTTPS_FOR_PUBLIC:-false}
+    ports:
+      - "8080:8080"
+    volumes:
+      - server-data:/data
+
+  sidecar:
+    build:
+      context: .
+      dockerfile: sidecar/Dockerfile
+    depends_on:
+      - server
+    environment:
+      SIDECAR_HOST: 0.0.0.0
+      SIDECAR_PORT: 8090
+      SIDECAR_PUBLIC_ORIGIN: ${SIDECAR_PUBLIC_ORIGIN:-http://localhost:8090}
+      SIDECAR_REGISTRY_URL: http://server:8080
+      SIDECAR_AUTO_REGISTER: ${SIDECAR_AUTO_REGISTER:-false}
+      SIDECAR_AGENT_NAME: ${SIDECAR_AGENT_NAME:-claw2claw-sidecar}
+      SIDECAR_AGENT_DESCRIPTION: ${SIDECAR_AGENT_DESCRIPTION:-Local OpenClaw sidecar}
+      SIDECAR_AGENT_VERSION: ${SIDECAR_AGENT_VERSION:-0.1.0}
+      SIDECAR_VISIBILITY: ${SIDECAR_VISIBILITY:-private}
+      SIDECAR_OWNER_TYPE: ${SIDECAR_OWNER_TYPE:-service}
+      SIDECAR_REGION: ${SIDECAR_REGION:-local}
+      SIDECAR_LANGUAGES: ${SIDECAR_LANGUAGES:-en}
+      SIDECAR_TAGS: ${SIDECAR_TAGS:-local}
+      SIDECAR_PUBLIC_SKILLS: ${SIDECAR_PUBLIC_SKILLS:-research.summarize}
+      SIDECAR_SIGNING_SEED_HEX: ${SIDECAR_SIGNING_SEED_HEX:-000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f}
+      A2A_BEARER_TOKEN: ${A2A_BEARER_TOKEN:-dev-bearer-token-change-me}
+    ports:
+      - "8090:8090"
+
+volumes:
+  server-data:

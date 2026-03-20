@@ -1,0 +1,32 @@
+{
+  "name": "claw2claw",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "server",
+    "sidecar"
+  ],
+  "scripts": {
+    "generate:types": "node scripts/generate-types.mjs",
+    "generate:sidecar-command": "node scripts/generate-sidecar-command.mjs",
+    "build": "npm run generate:types && npm run build --workspace server && npm run build --workspace sidecar",
+    "typecheck": "npm run generate:types && tsc -p tsconfig.json --noEmit",
+    "test": "npm run generate:types && vitest run",
+    "test:tck": "node scripts/run-tck.mjs",
+    "verify": "npm run build && npm run test && npm run test:tck",
+    "dev:server": "tsx server/src/index.ts",
+    "dev:sidecar": "tsx sidecar/src/index.ts"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.3",
+    "@types/node": "24.3.0",
+    "json-schema-to-typescript": "15.0.4",
+    "openapi-typescript": "7.10.1",
+    "tsup": "8.5.0",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4",
+    "yaml": "2.8.1"
+  }
+}
